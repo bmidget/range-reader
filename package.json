@@ -1,0 +1,25 @@
+{
+  "name": "temp-plugin",
+  "version": "1.0.0",
+  "description": "Supermechanical Range Reader",
+  "cordova": {
+    "id": "cordova-plugin-device",
+    "platforms": [
+      "ios"
+    ]
+  },
+  "main": "www/cdv-plugin-range-reader.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bmidget/range-reader.git"
+  },
+  "author": "Ben Midget <benmidget@gmail.com> (https://github.com/bmidget)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bmidget/range-reader/issues"
+  },
+  "homepage": "https://github.com/bmidget/range-reader#readme"
+}
