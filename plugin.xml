@@ -36,6 +36,11 @@
         <source-file src="src/ios/RangeLib/RangeTemperatureTranslator.m" />
         <header-file src="src/ios/RangeLib/RangeTrigger.h" />
         <srouce-file src="src/ios/RangeLib/RangeTrigger.m" />
+
+        <framework src="MediaPlayer.framework" />
+        <framework src="Accelerate.framework" />
+        <framework src="AudioToolbox.framework" />
+        <framework src="Foundation.framework" />
         
     </platform>
 
