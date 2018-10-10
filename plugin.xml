@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2014 PayPal. All rights reserved. -->
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:rim="http://www.blackberry.com/ns/widgets"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="range-reader"
+    version="0.0.1">
+    <name>RangeReader</name>
+    <description>This plugin device to read Supermechanical Thermometer</description>
+    <license>MIT License, see LICENSE.md for details</license>
+    <engines>
+            <engine name="cordova" version="&gt;=3.0.0" />
+    </engines>
+
+    <js-module src="www/cdv-plugin-range-reader.js" name="RangeReader">
+        <clobbers target="RangeReader" />
+    </js-module>
+
+    <!-- ios -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="RangeReader">
+                <param name="ios-package" value="RangeReader"/>
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/RangeLib/Range.h" />
+        <source-file src="src/ios/RangeLib/Range.m" />
+        <header-file src="src/ios/RangeLib/RangeAudioManager_internal.h" />
+        <header-file src="src/ios/RangeLib/RangeAudioManager.h" />
+        <source-file src="src/ios/RangeLib/RangeAudioManager.m" />
+        <header-file src="src/ios/RangeLib/RangeAudioOutput.h" />
+        <header-file src="src/ios/RangeLib/RangeData.h" />
+        <header-file src="src/ios/RangeLib/RangeDataManager.h" />
+        <header-file src="src/ios/RangeLib/RangeTemperatureTranslator.h" />
+        <source-file src="src/ios/RangeLib/RangeTemperatureTranslator.m" />
+        <header-file src="src/ios/RangeLib/RangeTrigger.h" />
+        <srouce-file src="src/ios/RangeLib/RangeTrigger.m" />
+        
+    </platform>
+
+</plugin>

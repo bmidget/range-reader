@@ -1,0 +1,8 @@
+body {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	color: #4f4c45;
+}
+.body { display: table; width: 320px; margin: auto; }
+.container { padding: 3px; height: 10em; text-align: center; vertical-align: middle; display: table-cell; }
+.description { font-size: 18px; margin-right: 18px; }
+.reading { font-size: 18px; font-weight: bold; }
