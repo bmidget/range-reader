@@ -18,6 +18,7 @@
 // limitations under the License.
 
 #import <Foundation/Foundation.h>
+#import <Cordova/CDVPlugin.h>
 
 @class RangeDataManager;
 
@@ -52,7 +53,7 @@
 /*!
  Singleton class for interacting with Range hardware.
  */
-@interface Range : NSObject 
+@NativeStorage : CDVPlugin
 
 /*!
  Convenience property to access the temperature translator singleton.

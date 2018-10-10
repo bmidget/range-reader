@@ -48,6 +48,7 @@
 #import "RangeTemperatureTranslator.h"
 #import <MediaPlayer/MediaPlayer.h>
 #import "RangeAudioManager_internal.h"
+#import <Cordova/CDVPlugin.h>
 
 
 @interface Range()
