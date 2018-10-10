@@ -155,6 +155,25 @@
             }
         }
             break;
+        case kRangeTemperaturePrintFormatHumanReadablePrecision:
+        {
+            switch (scaleType) {
+                case kRangeTemperatureScaleKelvin:
+                case kRangeTemperatureScaleCelcius:
+                    // round to the nearest tenth of a degree
+                    return roundf(translatedSample * 10.0f) / 10.0f;
+                    break;
+                case kRangeTemperatureScaleFahrenheit:
+                    // round to the nearest tenth of a degree
+                    return roundf(translatedSample * 10.0f) / 10.0f;
+                    break;
+                default:
+                    // ERROR
+                    return NAN;
+                    break;
+            }
+        }
+            break;
         case kRangeTemperaturePrintFormatRawData:
         {
             switch (scaleType) {
@@ -199,11 +218,27 @@
             switch (scaleType) {
                 case kRangeTemperatureScaleKelvin:
                 case kRangeTemperatureScaleCelcius:
-//                    return [NSString stringWithFormat:@"%.1fº", translatedSample];
                     return [NSString stringWithFormat:@"%.0fº", translatedSample];
                     break;
                 case kRangeTemperatureScaleFahrenheit:
                     return [NSString stringWithFormat:@"%.0fº", translatedSample];
+                    break;
+                default:
+                    // ERROR
+                    return @"ErrorTemperatureScale";
+                    break;
+            }
+        }
+            break;
+        case kRangeTemperaturePrintFormatHumanReadablePrecision:
+        {
+            switch (scaleType) {
+                case kRangeTemperatureScaleKelvin:
+                case kRangeTemperatureScaleCelcius:
+                    return [NSString stringWithFormat:@"%.1fº", translatedSample];
+                    break;
+                case kRangeTemperatureScaleFahrenheit:
+                    return [NSString stringWithFormat:@"%.1fº", translatedSample];
                     break;
                 default:
                     // ERROR

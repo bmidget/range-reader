@@ -114,8 +114,8 @@ typedef void (^MicPermissionHandler_t)(BOOL);
 -(void) enableAllAudio;
 
 /*!
- This function tries to return the control of the Audio system back to the SDK's code.
- It puts the Audio category and mode back in the state they were in when the audio was enabled.
+ This function tries to return the control of the audio system back to the SDK user's code.
+ It puts the audio category and mode back in the state they were in when the audio was enabled.
  The user should call the audioSession "setActive" function after calling this function to re-enable their normal session.
  */
 -(void) disableAllAudio;

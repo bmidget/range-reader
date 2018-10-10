@@ -190,14 +190,33 @@ const float targetMicGain = 0.2f;
 //    [g_isPermissionForMicrophone boolValue] == YES;
 //}
 
+MPVolumeView* volumeView = nil;
+
 + (float) getCurrentVolume
 {
-    return [MPMusicPlayerController applicationMusicPlayer].volume;
+    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    return audioSession.outputVolume;
 }
 
 + (void) setCurrentVolume: (float) inputVolume
 {
-    [MPMusicPlayerController applicationMusicPlayer].volume = inputVolume;
+    if  ([[AVAudioSession sharedInstance] recordPermission] != AVAudioSessionRecordPermissionGranted)
+        return;
+    
+    if (volumeView == nil)
+        volumeView = [[MPVolumeView alloc] init];
+
+    //find the volumeSlider
+    UISlider* volumeViewSlider = nil;
+    for (UIView *view in [volumeView subviews]){
+        if ([view.class.description isEqualToString:@"MPVolumeSlider"]){
+            volumeViewSlider = (UISlider*)view;
+            break;
+        }
+    }
+    
+    [volumeViewSlider setValue:inputVolume animated:YES];
+    [volumeViewSlider sendActionsForControlEvents:UIControlEventTouchUpInside];
 }
 
 #pragma mark - callbacks
@@ -205,45 +224,13 @@ const float targetMicGain = 0.2f;
 - (NSString*) getFirstAudioSessionRouteOut
 {
     NSString* output = @"None";
-    if(is_ios_6)
+    AVAudioSession* audioSession = self->_audioSession;
+    
+    AVAudioSessionRouteDescription * currentRouteDescription = audioSession.currentRoute;
+    if([currentRouteDescription.outputs count] > 0)
     {
-        AVAudioSession* audioSession = self->_audioSession;
-        
-        AVAudioSessionRouteDescription * currentRouteDescription = audioSession.currentRoute;
-        if([currentRouteDescription.outputs count] > 0)
-        {
-            AVAudioSessionPortDescription* firstOutput = currentRouteDescription.outputs[0];
-            output = firstOutput.portType;
-        }
-    } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        /*
-         returns the current session route:
-         * ReceiverAndMicrophone
-         * HeadsetInOut
-         * Headset
-         * HeadphonesAndMicrophone
-         * Headphone
-         * SpeakerAndMicrophone
-         * Speaker
-         * HeadsetBT
-         * LineInOut
-         * Lineout
-         * Default
-         */
-        
-        UInt32 rSize = sizeof (CFStringRef);
-        CFStringRef route;
-        AudioSessionGetProperty (kAudioSessionProperty_AudioRoute, &rSize, &route);
-        
-        // This trick shouldn't be relied on. It only worked in old iOS versions.
-        // I am keeping it here so that we don't ever return NULL.
-        if (route != NULL) {
-            output = [NSString stringWithFormat:@"%@", route];
-        }
-#pragma clang diagnostic pop
-#endif //MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
+        AVAudioSessionPortDescription* firstOutput = currentRouteDescription.outputs[0];
+        output = firstOutput.portType;
     }
     return output;
 }
@@ -260,80 +247,6 @@ static bool shouldProcessCallback(RangeAudioManager *manager)
 }
 
 
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-// pre-ios6 callback function
-static void audioRouteChangeListenerCallback (
-                                              void                      *inUserData,
-                                              AudioSessionPropertyID    inPropertyID,
-                                              UInt32                    inPropertyValueSize,
-                                              const void                *inPropertyValue)
-{
-    if (inPropertyID != kAudioSessionProperty_AudioRouteChange) return;
-    RangeAudioManager *manager = CFBridgingRelease(CFBridgingRetain((__bridge RangeAudioManager *) inUserData));
-    
-    if(shouldProcessCallback(manager))
-    {
-        CFDictionaryRef routeChangeDictionary = inPropertyValue;
-        
-        CFNumberRef routeChangeReasonRef =
-        CFDictionaryGetValue (
-                              routeChangeDictionary,
-                              CFSTR (kAudioSession_AudioRouteChangeKey_Reason));
-        
-        SInt32 routeChangeReason;
-        
-        CFNumberGetValue (
-                          routeChangeReasonRef,
-                          kCFNumberSInt32Type,
-                          &routeChangeReason);
-        
-        CFDictionaryRef newRouteRef = CFDictionaryGetValue(routeChangeDictionary, kAudioSession_AudioRouteChangeKey_CurrentRouteDescription);
-        NSDictionary *newRouteDict = (__bridge NSDictionary *)newRouteRef;
-        
-        CFDictionaryRef oldRoute = CFDictionaryGetValue(routeChangeDictionary, kAudioSession_AudioRouteChangeKey_PreviousRouteDescription);
-        
-        NSArray * paths = [[newRouteDict objectForKey: @"RouteDetailedDescription_Outputs"] count] ? [newRouteDict objectForKey: @"RouteDetailedDescription_Outputs"] : [newRouteDict objectForKey: @"RouteDetailedDescription_Inputs"];
-        
-        NSString * newRouteString = [[paths objectAtIndex: 0] objectForKey: @"RouteDetailedDescription_PortType"];
-        
-        NSString * oldRouteString = [[[((__bridge NSDictionary *)oldRoute) objectForKey: @"RouteDetailedDescription_Outputs"]objectAtIndex: 0] objectForKey: @"RouteDetailedDescription_PortType"];
-        
-        if(manager.audioState == kRangeAudioStateEnabledNotStarted)
-        {
-            if (routeChangeReason == kAudioSessionRouteChangeReason_NewDeviceAvailable && ![newRouteString isEqualToString: oldRouteString])
-            {
-                // Headset is plugged in..
-                if ([manager isHeadsetRoute: newRouteString])
-                {
-                    [manager rangeStartAllWithCallback];
-                }
-            }
-        } else {
-            if (routeChangeReason == kAudioSessionRouteChangeReason_NewDeviceAvailable && ![newRouteString isEqualToString: oldRouteString])
-            {
-                // Headset is plugged in..
-                if ([manager isHeadsetRoute: newRouteString])
-                {
-                    [manager rangeStartAllWithCallback];
-                }
-            } else if (routeChangeReason == kAudioSessionRouteChangeReason_OldDeviceUnavailable)
-            {
-                // Headset is unplugged..
-                if ([manager isHeadsetRoute: oldRouteString])
-                {
-                    [manager rangeStopAllWithCallback];
-                }
-            } else if(routeChangeReason == kAudioSessionRouteChangeReason_NoSuitableRouteForCategory)
-            {
-                [manager destroyTransitionWithDisable:NO];
-            }
-        }
-    }
-}
-#pragma clang diagnostic pop
-#endif //MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-
 // equivalent callback as audioRouteChangeListenerCallback for ios7
 - (void)routeChange:(NSNotification *)notification
 {
@@ -345,7 +258,7 @@ static void audioRouteChangeListenerCallback (
     NSString * newRouteString = ((AVAudioSessionPortDescription*)[newRouteDescription.outputs objectAtIndex: 0]).portType;
     NSString * oldRouteString = ((AVAudioSessionPortDescription*)[oldRouteDescription.outputs objectAtIndex: 0]).portType;
     
-    //    NSLog(@"%@ newRoute: %@ oldRoute: %@", notification, newRouteString, oldRouteString);
+//        NSLog(@"%@ newRoute: %@ oldRoute: %@", notification, newRouteString, oldRouteString);
     
     if(shouldProcessCallback(self))
     {
@@ -495,68 +408,21 @@ static void audioInterruptionListener (
     
     // Turn off mic auto gain and force it to the lowest gain setting.
     // This just adds consistency to things. Shouldn't really matter.
-    if(is_ios_6)
+    if(_audioSession.isInputGainSettable == YES)
     {
-        if(_audioSession.isInputGainSettable == YES)
+        if (![_audioSession setInputGain:targetMicGain error:&error])
         {
-            if (![_audioSession setInputGain:targetMicGain error:&error])
-            {
-                NSLog(@"AVAudioSession setInputGain failed: %@", [error localizedDescription]);
-            }
-        } else {
-            NSLog(@"ios6+ - cannot set input gain");
+            NSLog(@"AVAudioSession setInputGain failed: %@", [error localizedDescription]);
         }
-        
-        float inputGain = _audioSession.inputGain;
-        if(!(inputGain < targetMicGain + 0.01f && inputGain > targetMicGain - 0.01f))
-        {
-            NSLog(@"Mic gain not set as expected. Target: %f Actual: %f", targetMicGain, inputGain);
-        }
-        //        NSLog(@"inputGain: %0.2f",_audioSession.inputGain);
     } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        UInt32 ui32propSize = sizeof(UInt32);
-        UInt32 f32propSize = sizeof(Float32);
-        UInt32 inputGainAvailable = 0;
-        Float32 inputGain = targetMicGain;
-        
-        OSStatus status =
-        AudioSessionGetProperty(kAudioSessionProperty_InputGainAvailable
-                                , &ui32propSize
-                                , &inputGainAvailable);
-        
-        if (status != kAudioSessionNoError) {
-            NSLog(@"AudioSessionGetProperty... failed: %d", (int)status);
-        }
-        
-        if (inputGainAvailable) {
-            status =
-            AudioSessionSetProperty(kAudioSessionProperty_InputGainScalar
-                                    , sizeof(inputGain)
-                                    , &inputGain);
-            if (status != kAudioSessionNoError) {
-                NSLog(@"AudioSessionSetProperty... failed: %d", (int)status);
-            }
-        } else {
-            NSLog(@"ios5 - cannot set input gain");
-        }
-        status =
-        AudioSessionGetProperty(kAudioSessionProperty_InputGainScalar
-                                , &f32propSize
-                                , &inputGain);
-        
-        if (status != kAudioSessionNoError) {
-            NSLog(@"AudioSessionGetProperty... failed: %d", (int)status);
-        }
-        
-        if(!(inputGain < targetMicGain + 0.01f && inputGain > targetMicGain - 0.01f))
-        {
-            NSLog(@"Mic gain not set as expected. Target: %f Actual: %f", targetMicGain, inputGain);
-        }
-        //        NSLog(@"inputGain: %0.2f",inputGain);
-#pragma clang diagnostic pop
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
+        NSLog(@"ios6+ - cannot set input gain");
+    }
+    
+    float inputGain = _audioSession.inputGain;
+    //if(!(inputGain < targetMicGain + 0.01f && inputGain > targetMicGain - 0.01f))
+    if(!(inputGain < targetMicGain + 0.02f && inputGain > targetMicGain - 0.01f))
+    {
+        NSLog(@"Mic gain not set as expected. Target: %f Actual: %f", targetMicGain, inputGain);
     }
 }
 
@@ -589,59 +455,14 @@ static void audioInterruptionListener (
         
         _audioSession = [AVAudioSession sharedInstance];
         
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        OSStatus status;
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(interruption:)
+                                                     name:AVAudioSessionInterruptionNotification object:nil];
         
-        if(is_ios_6)
-        {
-            [[NSNotificationCenter defaultCenter] addObserver:self
-                                                     selector:@selector(interruption:)
-                                                         name:AVAudioSessionInterruptionNotification object:nil];
-        } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            status = AudioSessionInitialize( NULL,
-                                            NULL,
-                                            audioInterruptionListener,
-                                            (__bridge void *)(self) );
-#pragma clang diagnostic pop
-            if (status != kAudioSessionNoError) {
-                NSLog(@"AudioSessionInitialize... failed: %d", (int)status);
-            }
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        }
-        
-        // Configure it so that we will recieve notifications about interruptions from our audio session.
-        if(is_ios_6)
-        {
-            // AVAudioSessionInterruptionNotification
-            // Already set above.
-        } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            [_audioSession setDelegate: (id<AVAudioSessionDelegate>)self];
-#pragma clang diagnostic pop
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        }
-        
-        if(is_ios_6)
-        {
-            [[NSNotificationCenter defaultCenter] addObserver:self
-                                                     selector:@selector(routeChange:)
-                                                         name:AVAudioSessionRouteChangeNotification
-                                                       object:nil];
-        } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-            status = AudioSessionAddPropertyListener (
-                                                      kAudioSessionProperty_AudioRouteChange,
-                                                      audioRouteChangeListenerCallback,
-                                                      (__bridge void *)(self));
-            if (status != kAudioSessionNoError) {
-                NSLog(@"AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange... failed: %d", (int)status);
-            }
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        }
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(routeChange:)
+                                                     name:AVAudioSessionRouteChangeNotification
+                                                   object:nil];
         
         return self;
     } else {
@@ -692,22 +513,12 @@ static void audioInterruptionListener (
     }
 }
 
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-// pre-ios6 property setter
--(void) oldIosPropertySetterWithRoute: (UInt32) audioRouteOverride
-{
-    OSStatus status = AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
-    if (status != kAudioSessionNoError) {
-        NSLog(@"AudioSessionSetProperty... failed: %d", (int)status);
-    }
-}
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-
-
 - (BOOL) checkAndFixPowerVolume {
     BOOL output = NO;
     // check our
-    if( [RangeAudioManager getCurrentVolume] != maxVolume && [self isHeadsetPluggedIn])
+    if( [RangeAudioManager getCurrentVolume] != maxVolume &&
+       [self isHeadsetPluggedIn] &&
+       [[AVAudioSession sharedInstance] recordPermission] == AVAudioSessionRecordPermissionGranted )
     {
         [RangeAudioManager setCurrentVolume: maxVolume];
         output = YES;
@@ -717,15 +528,7 @@ static void audioInterruptionListener (
 
 - (BOOL) isSpeakerOutput {
     NSString* audioRoute = [self getFirstAudioSessionRouteOut];
-    BOOL output = false;
-    if( is_ios_6)
-    {
-        output = [audioRoute isEqualToString:AVAudioSessionPortBuiltInSpeaker];
-    } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        output = [audioRoute isEqualToString:kRSpeaker] || [audioRoute isEqualToString:kRSpeakerAndMicrophone];
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-    }
+    BOOL output = [audioRoute isEqualToString:AVAudioSessionPortBuiltInSpeaker];
     return output;
 }
 
@@ -785,30 +588,14 @@ static void audioInterruptionListener (
 
 -(void) enableSpeakerOverride
 {
-    if (is_ios_6)
-    {
-        //running on iOS 6.0.0 or higher
-        [_audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:nil];
-    } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
-        [self oldIosPropertySetterWithRoute:audioRouteOverride];
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-    }
+    //running on iOS 6.0.0 or higher
+    [_audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:nil];
 }
 
 -(void) disableSpeakerOverride
 {
-    if (is_ios_6)
-    {
-        //running on iOS 6.0.0 or higher
-        [_audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:nil];
-    } else {
-#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-        UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_None;
-        [self oldIosPropertySetterWithRoute:audioRouteOverride];
-#endif //#if MY_APP_DOES_RUN_ON_EARLIER_THAN_IOS_6
-    }
+    //running on iOS 6.0.0 or higher
+    [_audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:nil];
 }
 
 #pragma mark - Volume functions

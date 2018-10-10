@@ -32,6 +32,9 @@
  Hands control of object to caller.
  */
 - (RangeDataManager*) allTemperatures;
+- (RangeDataManager*) allTemperaturesSample;
+
+- (RangeDataManager*) sampleTemperatureCurve;
 
 /*!
  Start the audio data aquisition.

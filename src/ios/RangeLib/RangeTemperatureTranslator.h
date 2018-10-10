@@ -51,6 +51,7 @@ typedef NS_ENUM(UInt32, RangeTemperatureScale) {
  The constant for printing the temperature in a simple computer readable way.
  */
 typedef NS_ENUM(UInt32, RangeTemperaturePrintFormat) {
+    kRangeTemperaturePrintFormatHumanReadablePrecision = 2,
     kRangeTemperaturePrintFormatHumanReadable  = 1,
     kRangeTemperaturePrintFormatRawData    = 0
 };

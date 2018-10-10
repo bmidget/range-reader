@@ -230,6 +230,7 @@ const BOOL useBackgroundColors = true && !useWebView;
             (lastSampleSeen.unix_time + secondsUntilStale) < [[NSDate date] timeIntervalSince1970] ||
             headsetPluggedIn == NO;
             
+            isDataCurrentlyStale = NO; //temporary hack while we figure out why we're getting data flagged as stale
             if(isDataCurrentlyStale)
             {
                 // It has been more than seconds_till_stale since our code has seen a data point.
