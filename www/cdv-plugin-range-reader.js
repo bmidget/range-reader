@@ -30,8 +30,8 @@ var PLUGIN_NAME = 'RangeReader';
  * @constructor
  */
 var RangeReader = {
-  read: function (cb) {
-    exec(cb, null, PLUGIN_NAME, 'allRangeData');
+  read: function (cb, ecb) {
+    exec(cb, ecb, PLUGIN_NAME, 'allRangeData');
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "temp-plugin",
-  "version": "1.0.0",
+  "version": "0.3",
   "description": "Supermechanical Range Reader",
   "cordova": {
     "id": "cordova-plugin-device",

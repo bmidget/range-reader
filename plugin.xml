@@ -24,7 +24,19 @@
             </feature>
         </config-file>
 
-        <source-file src="src/ios/RangeLib/libRangeLib-release.a" />
+        <header-file src="src/ios/RangeLib/Range.h" />
+        <header-file src="src/ios/RangeLib/RangeAudioManager_internal.h" />
+        <header-file src="src/ios/RangeLib/RangeAudioManager.h" />
+        <header-file src="src/ios/RangeLib/RangeAudioOutput.h" />
+        <header-file src="src/ios/RangeLib/RangeData.h" />
+        <header-file src="src/ios/RangeLib/RangeDataManager.h" />
+        <header-file src="src/ios/RangeLib/RangeTemperatureTranslator.h" />
+        <header-file src="src/ios/RangeLib/RangeTrigger.h" />
+
+        <source-file src="src/ios/RangeLib/Range.m" />
+        <source-file src="src/ios/RangeLib/RangeAudioManager.m" />
+        <source-file src="src/ios/RangeLib/RangeTemperatureTranslator.m" />
+        <source-file src="src/ios/RangeLib/RangeTrigger.m" />
 
         <framework src="MediaPlayer.framework" />
         <framework src="Accelerate.framework" />
